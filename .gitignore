@@ -44,3 +44,6 @@ java-generated/
 .env
 .secrets
 .vars
+
+### CI / test output ###
+test-results/
