@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # ================================
 # Stage 1: Build with Gradle
 # ================================
@@ -10,12 +12,14 @@ COPY gradlew gradlew
 COPY gradle gradle
 COPY build.gradle settings.gradle ./
 
-# Download dependencies (cached layer)
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
+# Download dependencies with cache mount (persists between builds)
+RUN --mount=type=cache,target=/root/.gradle \
+    chmod +x gradlew && ./gradlew dependencies --no-daemon
 
 # Copy source code and build
 COPY src src
-RUN ./gradlew bootJar --no-daemon -x test
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew bootJar --no-daemon -x test
 
 # ================================
 # Stage 2: Runtime with JRE only
