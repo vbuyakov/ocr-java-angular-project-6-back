@@ -42,3 +42,5 @@ java-generated/
 
 ### Environment Variables ###
 .env
+.secrets
+.vars
