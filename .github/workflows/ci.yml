@@ -39,6 +39,7 @@ jobs:
           name: test-results
           path: test-results
 
+  # Build Docker image first to verify it works before releasing
   build:
     runs-on: ubuntu-latest
     needs: test
@@ -50,8 +51,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Dockerfile handles Gradle build internally (multi-stage)
-      - name: Build Docker image (no push)
+      # Build image first to verify Dockerfile works (no push yet)
+      - name: Build Docker image (verify)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -61,14 +62,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha
 
-  publish:
+  # Release only after build is verified
+  release:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    needs:
-      - test
-      - build
+    needs: build
     permissions:
       contents: write
+
+    outputs:
+      new_release_version: ${{ steps.release.outputs.new_release_version }}
 
     steps:
       - name: Checkout code
@@ -94,6 +97,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Push Docker image after release
+  publish:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    needs: release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -110,14 +123,13 @@ jobs:
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}"
           {
             echo "tags<<EOF"
-            [ -n "${{ steps.release.outputs.new_release_version }}" ] && echo "${IMAGE}:${{ steps.release.outputs.new_release_version }}"
-            [ -n "${{ steps.release.outputs.new_release_version }}" ] && echo "${IMAGE}:v${{ steps.release.outputs.new_release_version }}"
+            [ -n "${{ needs.release.outputs.new_release_version }}" ] && echo "${IMAGE}:${{ needs.release.outputs.new_release_version }}"
+            [ -n "${{ needs.release.outputs.new_release_version }}" ] && echo "${IMAGE}:v${{ needs.release.outputs.new_release_version }}"
             echo "${IMAGE}:${{ github.sha }}"
             echo "${IMAGE}:latest"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      # Dockerfile handles Gradle build internally (multi-stage)
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
