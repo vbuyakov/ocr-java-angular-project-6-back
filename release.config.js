@@ -43,6 +43,21 @@ module.exports = {
         },
       },
     ],
+    // Update version in build.gradle
+    [
+      '@semantic-release/exec',
+      {
+        prepareCmd: "sed -i \"s/^version = '.*'/version = '${nextRelease.version}'/\" build.gradle",
+      },
+    ],
+    // Commit the updated build.gradle
+    [
+      '@semantic-release/git',
+      {
+        assets: ['build.gradle'],
+        message: 'chore(release): ${nextRelease.version} [skip ci]',
+      },
+    ],
     '@semantic-release/github',
   ],
 };

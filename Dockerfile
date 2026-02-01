@@ -1,12 +1,32 @@
-FROM eclipse-temurin:21-jre AS runtime
+# ================================
+# Stage 1: Build with Gradle
+# ================================
+FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /app
 
-# Copy the built Spring Boot fat jar from the Gradle build output.
-# We use a wildcard to avoid hardcoding the version.
-COPY build/libs/*.jar app.jar
+# Copy Gradle wrapper and build files
+COPY gradlew gradlew
+COPY gradle gradle
+COPY build.gradle settings.gradle ./
+
+# Download dependencies (cached layer)
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
+
+# Copy source code and build
+COPY src src
+RUN ./gradlew bootJar --no-daemon -x test
+
+# ================================
+# Stage 2: Runtime with JRE only
+# ================================
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+# Copy the built Spring Boot fat jar from build stage
+COPY --from=build /app/build/libs/*.jar app.jar
 
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
