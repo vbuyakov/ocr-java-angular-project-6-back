@@ -56,6 +56,32 @@ You can configure the application with these environment variables
 - SPRING_DATASOURCE_USERNAME: Database user name used by the application
 - SPRING_DATASOURCE_PASSWORD: Database user password used by the application
 
+## GitHub Actions: Variables & Secrets
+
+If you run CI in GitHub Actions, add the following repository entries:
+
+### Repository Variables
+
+- APP_TYPE: `springboot`
+
+### Repository Secrets
+
+- DOCKERHUB_USERNAME: Docker Hub username
+- DOCKERHUB_TOKEN: Docker Hub access token
+
+
+## Semantic Release
+
+Releases are automated with semantic-release using Conventional Commits on the `main` branch, per `release.config.js`.
+
+- `feat:` → minor release
+- `fix:` or `perf:` → patch release
+- `feat!:` or `BREAKING CHANGE:` → major release
+- `docs:`, `chore:`, `style:`, etc. → no release
+
+Release notes are generated and published to GitHub via the semantic-release GitHub plugin.
+
+
 ## Testing
 
 We take testing seriously! To verify the correctness of our application, run the following command:
@@ -94,3 +120,5 @@ To publish your application to a GitLab registry, follow these steps:
    Remember to replace placeholders with actual values specific to your project.
 
 Feel free to enhance this README with additional details, such as API endpoints, security considerations, and deployment instructions. Happy organizing! 🚀
+
+
